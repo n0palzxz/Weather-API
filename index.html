@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Latihan 2 - API to Chart</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-[#0b1329] text-slate-200 min-h-screen font-sans antialiased selection:bg-sky-500/30 flex">
+
+  <div id="weather-error" class="hidden alert alert-error fixed bottom-4 right-4 z-50 max-w-md shadow-2xl border border-rose-500/20 bg-rose-950/80 backdrop-blur-md rounded-xl p-4 flex items-center gap-3">
+    <i class="ri-error-warning-fill text-2xl text-rose-400"></i>
+    <span class="text-xs font-medium text-rose-200">Koneksi API bermasalah. Sistem mencoba memuat ulang...</span>
+  </div>
+
+  <aside class="w-64 border-r border-slate-800/60 bg-[#0b1329]/90 h-screen sticky top-0 z-50 hidden lg:flex flex-col justify-between p-5 shrink-0">
+    <div class="space-y-6">
+      <div class="flex items-center gap-2.5 px-2 py-1">
+        <i class="ri-cloud-windy-line text-2xl text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]"></i>
+        <span class="text-lg font-black tracking-tight text-white uppercase">Meteo System</span>
+      </div>
+      
+      <nav id="sidebar-menu" class="space-y-1">
+        <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2.5 mb-2">Filter Wilayah</span>
+        
+        <button data-filter="all" class="menu-item flex w-full items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-sky-500/10 to-transparent text-sky-400 border border-sky-500/10 text-xs font-bold tracking-wide transition-all text-left focus:outline-none">
+          <i class="ri-global-line text-base"></i> Semua Kota
+        </button>
+        
+        <button data-filter="Java" class="menu-item flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-[#132247]/40 text-xs font-medium tracking-wide transition-all text-left focus:outline-none">
+          <i class="ri-map-pin-5-line text-base"></i> Pulau Jawa
+        </button>
+        
+        <button data-filter="Outer" class="menu-item flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-[#132247]/40 text-xs font-medium tracking-wide transition-all text-left focus:outline-none">
+          <i class="ri-compass-3-line text-base"></i> Luar Pulau Jawa
+        </button>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+
+    <header class="border-b border-slate-800/60 bg-[#0b1329]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div class="flex items-center gap-2.5">
+        <h1 class="text-xl md:text-2xl font-black tracking-tight text-white uppercase bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+          Latihan 2 – API &rarr; Chart
+        </h1>
+      </div>
+      
+      <div class="w-full sm:w-72 relative group">
+        <select id="city-selector" class="select select-bordered w-full bg-[#132247]/60 border-slate-700/80 text-sm font-medium text-white focus:outline-none focus:border-sky-500 rounded-xl pr-10 shadow-inner appearance-none transition-all">
+          </select>
+        <div class="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none text-slate-400 group-hover:text-sky-400 transition-colors">
+          <i class="ri-map-pin-2-line text-base"></i>
+          <i class="ri-arrow-down-s-line text-xs"></i>
+        </div>
+      </div>
+    </header>
+
+    <main class="p-4 md:p-6 grid grid-cols-1 xl:grid-cols-4 gap-6 max-w-[1600px] w-full mx-auto flex-1">
+      
+      <div class="xl:col-span-3 space-y-6">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <div class="md:col-span-2 bg-gradient-to-br from-[#132247]/50 to-[#0b1329]/60 border border-slate-800/70 rounded-2xl p-6 relative overflow-hidden shadow-xl group">
+            <div class="absolute top-0 right-0 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl group-hover:bg-sky-500/10 transition-all duration-700"></div>
+            
+            <div class="flex justify-between items-start mb-4 relative z-10">
+              <div>
+                <h2 id="info-city-name" class="text-lg font-bold text-white tracking-wide">Loading City...</h2>
+                <p id="info-time" class="text-[11px] font-mono text-slate-400/90 mt-0.5">Last check: --</p>
+              </div>
+              <button id="btn-refresh" class="btn btn-sm bg-[#132247]/80 hover:bg-sky-600 border-slate-700/60 text-slate-200 hover:text-white rounded-lg text-[11px] font-bold tracking-wider uppercase transition-all shadow-md gap-1.5 px-3">
+                <i class="ri-refresh-line text-xs"></i> Global Refresh
+              </button>
+            </div>
+
+            <div class="flex items-center gap-6 my-6 relative z-10">
+              <div class="flex items-baseline">
+                <span id="info-temp" class="text-6xl md:text-7xl font-black text-white font-mono tracking-tighter">--</span>
+                <span class="text-3xl md:text-4xl font-light text-sky-400 font-mono select-none">&deg;C</span>
+              </div>
+              <div id="info-icon" class="filter drop-shadow-[0_4px_12px_rgba(56,189,248,0.3)]">
+                <i class="ri-cloud-line text-5xl text-slate-400"></i>
+              </div>
+            </div>
+
+            <p id="info-status" class="text-base font-semibold text-slate-200 mb-6 tracking-wide">Mengecek kondisi...</p>
+            
+            <div class="space-y-2 pt-2 border-t border-slate-800/60 relative z-10">
+              <div class="flex justify-between text-[11px] font-medium text-slate-400">
+                <span class="tracking-wider uppercase">Temperature progress</span>
+                <span id="progress-val" class="font-mono text-sky-400 font-bold">--&deg;C</span>
+              </div>
+              <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden p-[2px] border border-slate-800/40">
+                <div id="temp-gauge-bar" class="bg-gradient-to-r from-sky-500 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-[#132247]/40 border border-slate-800/70 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+            <div>
+              <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3.5">Condition Index</h3>
+              <div class="space-y-2">
+                <div class="flex justify-between text-xs py-1.5 border-b border-slate-800/40"><span class="text-slate-400">Comfort Level</span><span class="font-medium text-white">Comfortable</span></div>
+                <div class="flex justify-between text-xs py-1.5 border-b border-slate-800/40"><span class="text-slate-400">Relative Humidity</span><span id="idx-humidity" class="font-mono font-bold text-sky-400">--%</span></div>
+                <div class="flex justify-between text-xs py-1.5"><span class="text-slate-400">Dew Point</span><span id="idx-dewpoint" class="font-mono font-bold text-emerald-400">--&deg;C</span></div>
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800/60 grid grid-cols-2 gap-2 items-center">
+              <div>
+                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wind Speed</span>
+                <div class="flex items-baseline gap-0.5 mt-0.5"><span id="info-wind" class="text-3xl font-black font-mono text-white">--</span><span class="text-xs font-medium text-slate-400">m/h</span></div>
+              </div>
+              <div class="flex flex-col items-center">
+                <div class="relative w-14 h-14 rounded-full border-2 border-slate-700/60 bg-slate-950/40 flex items-center justify-center">
+                  <span class="absolute top-0.5 text-[8px] font-black font-mono text-slate-500">N</span>
+                  <div id="wind-arrow" class="w-1 h-8 bg-gradient-to-t from-transparent to-sky-400 rounded-full transition-transform duration-700 ease-out" style="transform: rotate(0deg)"></div>
+                </div>
+                <div id="info-direction-raw" class="text-[10px] font-mono font-semibold text-slate-300 mt-1">--&deg;</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-[#132247]/30 border border-slate-800/70 rounded-2xl p-5 shadow-xl">
+          <h3 class="text-sm font-bold text-white tracking-wide">Daily Tuhu Harian (24 Jam Ke Depan)</h3>
+          <div class="h-56 relative w-full mt-4">
+            <canvas id="tempChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-[#132247]/30 border border-slate-800/70 rounded-2xl p-5 shadow-xl">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">7-Day Forecast Overview</h3>
+          <div id="forecast-7days-container" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3"></div>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <div class="bg-[#132247]/40 border border-slate-800/70 rounded-2xl p-5 shadow-xl space-y-4">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Air Quality Index</h3>
+          <div class="flex justify-between items-baseline">
+            <span class="text-xs font-semibold text-slate-300">Score Status</span>
+            <span id="aqi-score" class="text-xl font-bold font-mono text-white">--<span class="text-xs text-slate-500 font-normal">/100</span></span>
+          </div>
+          <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800/30">
+            <div id="aqi-bar" class="bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 h-full rounded-full transition-all duration-1000" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="bg-[#132247]/30 border border-slate-800/70 rounded-2xl p-5 shadow-xl flex flex-col min-h-[420px]">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Live Monitor Indonesian Cities</h3>
+          <div id="live-cities-list" class="space-y-2.5 flex-1 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="text-center py-6 text-[11px] font-mono text-slate-500 tracking-wider border-t border-slate-900 px-6">
+      Local Indonesian Administrative Time &copy; 2026 Dashboard System Framework. All rights reserved.
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
